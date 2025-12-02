@@ -2,6 +2,12 @@
 
 This project provides a Go library to generate a Cosmos blockchain wallet address from a 12-word mnemonic phrase. It is designed to be used in applications that need to interact with the Cosmos blockchain for wallet creation and balance checking. The library also includes functionality to store wallet information in a PostgreSQL database using GORM.
 
+## LuckySix
+This is a part of the project. All results you can get by 3 projects.    
+ - [LuckySix](https://github.com/basel-ax/luckysix)
+ - [LuckyEth](https://github.com/basel-ax/lucky-eth)
+ - [LuckyCosmos](https://github.com/basel-ax/lucky-cosmos)
+
 ## Features
 
 -   Generate a Cosmos wallet address from a 12-word BIP39 mnemonic.
@@ -45,10 +51,7 @@ func main() {
 
 **Note:** This usage example assumes you have the `gaiad` command-line tool (or a compatible Cosmos SDK binary) installed and available in your system's `PATH`.
 
-Example for Ubuntu/Debian  
-```bash
-sudo snap install gaia --beta
-```
+[Installing Gaia](https://docs.cosmos.network/hub/v25/getting-started/installation)  
 
 ## Checker Command
 

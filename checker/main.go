@@ -49,9 +49,9 @@ func main() {
 
 	log.Println("Checker application starting...")
 
-	// Fetch all wallet balances from the database.
+	// Fetch all wallet balances from the database that have a Cosmos address.
 	var wallets []entity.WalletBalance
-	if err := db.Find(&wallets).Error; err != nil {
+	if err := db.Where("cosmos_address != ?", "").Find(&wallets).Error; err != nil {
 		log.Fatalf("Error fetching wallets from database: %v", err)
 	}
 
@@ -60,21 +60,6 @@ func main() {
 	for _, wallet := range wallets {
 		log.Printf("Processing wallet ID: %d", wallet.ID)
 		currentWallet := wallet // Make a mutable copy
-
-		// 1. Check if CosmosAddress is empty. If so, generate it and save to DB.
-		if currentWallet.CosmosAddress == "" {
-			log.Printf("Wallet ID %d has no address, generating...", currentWallet.ID)
-			if err := currentWallet.SetCosmosAddressFromMnemonic(); err != nil {
-				log.Printf("ERROR: Could not generate address for wallet ID %d: %v", currentWallet.ID, err)
-				continue // Skip to the next wallet.
-			}
-
-			if err := db.Save(&currentWallet).Error; err != nil {
-				log.Printf("ERROR: Could not save newly generated address for wallet ID %d: %v", currentWallet.ID, err)
-				continue // Skip to the next wallet.
-			}
-			log.Printf("Successfully generated and saved address for wallet ID %d: %s", currentWallet.ID, currentWallet.CosmosAddress)
-		}
 
 		// 2. Check wallet balance if not already notified.
 		if !currentWallet.IsNotified {
