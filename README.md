@@ -7,6 +7,7 @@ This project provides a Go library to generate a Cosmos blockchain wallet addres
 -   Generate a Cosmos wallet address from a 12-word BIP39 mnemonic.
 -   Uses an external CLI tool (`gaiad`) for address generation, removing complex Go dependencies.
 -   Database integration with GORM for storing wallet data.
+-   A standalone checker command to monitor wallet balances and send notifications.
 -   Designed to be configured via environment variables.
 
 ## Usage
@@ -44,6 +45,28 @@ func main() {
 
 **Note:** This usage example assumes you have the `gaiad` command-line tool (or a compatible Cosmos SDK binary) installed and available in your system's `PATH`.
 
+## Checker Command
+
+This project includes a standalone command-line tool in the `checker` directory that performs the following actions:
+
+1.  Connects to the PostgreSQL database.
+2.  Fetches all `WalletBalance` records.
+3.  For each record, if the `CosmosAddress` is missing, it generates one from the mnemonic and saves it to the database.
+4.  It then checks the wallet's balance using the public Atomscan API.
+5.  If the balance is greater than zero and a notification has not been sent yet, it sends a message to a specified Telegram chat with a link to the wallet on Atomscan.
+6.  Finally, it marks the wallet as notified in the database to prevent duplicate messages.
+
+### Running the Checker
+
+To run the checker, navigate to the `checker` directory and run the `main.go` file:
+
+```bash
+cd checker
+go run .
+```
+
+Make sure you have all the required environment variables set before running the command.
+
 ## Configuration
 
 This library is configured using environment variables. You can create a `.env` file in your project root or set the variables in your deployment environment.
@@ -55,5 +78,5 @@ This library is configured using environment variables. You can create a `.env` 
 | `DB_USER` | The username for the PostgreSQL database. |
 | `DB_PASSWORD` | The password for the PostgreSQL database. |
 | `DB_NAME` | The name of the PostgreSQL database. |
-| `TELEGRAM_BOT_TOKEN` | The token for your Telegram bot. |
+| `TELEGRAM_APP_BOT_TOKEN` | The token for your Telegram bot, used by the checker command. |
 | `TELEGRAM_CHAT_ID` | The chat ID to send notifications to. |
