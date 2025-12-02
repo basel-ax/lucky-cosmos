@@ -13,9 +13,9 @@ import (
 )
 
 func main() {
-	// Load .env file for local development.
+	// Load .env file for local development from the parent directory.
 	// In production, environment variables should be set directly.
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		log.Println("No .env file found, relying on system environment variables")
 	}
 
@@ -85,26 +85,32 @@ func main() {
 				continue // Skip to next wallet.
 			}
 
+			now := time.Now()
+			currentWallet.BalanceUpdatedAt = &now
+
 			// 3. If balance > 0, send a Telegram message.
 			if hasBalance {
 				log.Printf("SUCCESS: Wallet %s (ID: %d) has a positive balance!", currentWallet.CosmosAddress, currentWallet.ID)
 
 				if err := sendTelegramNotification(telegramToken, telegramChatID, currentWallet.CosmosAddress); err != nil {
 					log.Printf("ERROR: Failed to send Telegram notification for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
-					continue // Don't mark as notified if the notification failed.
-				}
-
-				// 4. Mark as notified in the DB to prevent spam.
-				now := time.Now()
-				currentWallet.IsNotified = true
-				currentWallet.BalanceUpdatedAt = &now
-				if err := db.Save(&currentWallet).Error; err != nil {
-					log.Printf("ERROR: Failed to update IsNotified flag for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
 				} else {
-					log.Printf("Successfully marked wallet %s (ID: %d) as notified.", currentWallet.CosmosAddress, currentWallet.ID)
+					// 4. Mark as notified to prevent spam.
+					currentWallet.IsNotified = true
 				}
 			} else {
 				log.Printf("Wallet %s (ID: %d) has zero balance.", currentWallet.CosmosAddress, currentWallet.ID)
+			}
+
+			// Save the updated wallet state (BalanceUpdatedAt and possibly IsNotified)
+			if err := db.Save(&currentWallet).Error; err != nil {
+				log.Printf("ERROR: Failed to update wallet state for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
+			} else {
+				if hasBalance && currentWallet.IsNotified {
+					log.Printf("Successfully marked wallet %s (ID: %d) as notified.", currentWallet.CosmosAddress, currentWallet.ID)
+				} else {
+					log.Printf("Successfully updated balance timestamp for wallet %s (ID: %d).", currentWallet.CosmosAddress, currentWallet.ID)
+				}
 			}
 		} else {
 			log.Printf("Wallet %s (ID: %d) was already notified. Skipping.", currentWallet.CosmosAddress, currentWallet.ID)

@@ -45,6 +45,11 @@ func main() {
 
 **Note:** This usage example assumes you have the `gaiad` command-line tool (or a compatible Cosmos SDK binary) installed and available in your system's `PATH`.
 
+Example for Ubuntu/Debian  
+```bash
+sudo snap install gaia --beta
+```
+
 ## Checker Command
 
 This project includes a standalone command-line tool in the `checker` directory that performs the following actions:
