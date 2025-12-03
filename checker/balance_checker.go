@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 	"net/http"
 	"time"
 )
@@ -28,10 +27,10 @@ type BalanceResponse struct {
 }
 
 // CheckBalance checks a Cosmos address's balance using a public Cosmos REST API.
-// It returns true if the balance of 'uatom' is greater than zero, and false otherwise.
-func CheckBalance(address string) (bool, error) {
+// It returns the balance of 'uatom' as a string. If no 'uatom' balance is found, it returns "0".
+func CheckBalance(address string) (string, error) {
 	if address == "" {
-		return false, fmt.Errorf("address cannot be empty")
+		return "0", fmt.Errorf("address cannot be empty")
 	}
 
 	// Construct the full API URL for the given address.
@@ -42,47 +41,45 @@ func CheckBalance(address string) (bool, error) {
 		Timeout: 15 * time.Second,
 	}
 
-	// Perform the GET request to the Atomscan API.
+	// Perform the GET request to the Cosmos API.
 	resp, err := client.Get(url)
 	if err != nil {
-		return false, fmt.Errorf("failed to make HTTP request to Cosmos API: %w", err)
+		return "0", fmt.Errorf("failed to make HTTP request to Cosmos API: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// The API should return a 200 OK status code on success.
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("received non-200 status code from Cosmos API: %d", resp.StatusCode)
+		// A 404 might mean the account is new and has no transactions, which is not an error for our case.
+		if resp.StatusCode == http.StatusNotFound {
+			return "0", nil
+		}
+		return "0", fmt.Errorf("received non-200 status code from Cosmos API: %d", resp.StatusCode)
 	}
 
 	// Read the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("failed to read response body: %w", err)
+		return "0", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Unmarshal the JSON response into our BalanceResponse struct.
 	var balanceResp BalanceResponse
 	if err := json.Unmarshal(body, &balanceResp); err != nil {
-		return false, fmt.Errorf("failed to unmarshal json response from Cosmos API: %w", err)
+		return "0", fmt.Errorf("failed to unmarshal json response from Cosmos API: %w", err)
 	}
 
 	// Iterate through the balances to find the 'uatom' denomination.
 	for _, balance := range balanceResp.Balances {
 		if balance.Denom == atomDenom {
-			// Convert the amount string to a big.Int for safe comparison of large numbers.
-			balanceAmount, ok := new(big.Int).SetString(balance.Amount, 10)
-			if !ok {
-				// This case would happen if the amount is not a valid integer string.
-				return false, fmt.Errorf("failed to parse balance amount string: '%s'", balance.Amount)
+			// If the amount is empty, treat it as zero.
+			if balance.Amount == "" {
+				return "0", nil
 			}
-
-			// Check if the balance is greater than zero.
-			if balanceAmount.Cmp(big.NewInt(0)) > 0 {
-				return true, nil
-			}
+			return balance.Amount, nil
 		}
 	}
 
-	// If no 'uatom' balance was found or its value was 0.
-	return false, nil
+	// If no 'uatom' balance was found in the balances array.
+	return "0", nil
 }

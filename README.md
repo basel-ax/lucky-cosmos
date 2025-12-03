@@ -75,6 +75,17 @@ go run .
 
 Make sure you have all the required environment variables set before running the command.
 
+### Migrating Addresses
+
+If you have existing wallets in your database that have a `Mnemonic` but are missing a `CosmosAddress`, you can use the `-migrate-addresses` flag to generate and save the addresses for them.
+
+```bash
+cd checker
+go run . -migrate-addresses
+```
+
+This command will find all wallets that need an address, generate it, and save it to the database.
+
 ## Configuration
 
 This library is configured using environment variables. You can create a `.env` file in your project root or set the variables in your deployment environment.

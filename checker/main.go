@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 func main() {
 	// Define command-line flags
 	devMode := flag.Bool("dev", false, "Enable development mode to generate a Cosmos address for the first wallet that needs one.")
+	migrateAddresses := flag.Bool("migrate-addresses", false, "Generate Cosmos addresses for all wallets with a mnemonic but no Cosmos address.")
 	flag.Parse()
 
 	// Load .env file for local development from the parent directory.
@@ -46,6 +48,33 @@ func main() {
 	// Auto-migrate the schema to ensure the table exists and is up-to-date.
 	if err := db.AutoMigrate(&entity.WalletBalance{}); err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)
+	}
+
+	// Handle the -migrate-addresses flag
+	if *migrateAddresses {
+		log.Println("Starting address migration...")
+		var walletsToMigrate []entity.WalletBalance
+		if err := db.Where("mnemonic IS NOT NULL AND mnemonic != '' AND (cosmos_address IS NULL OR cosmos_address = '')").Find(&walletsToMigrate).Error; err != nil {
+			log.Fatalf("Failed to fetch wallets for migration: %v", err)
+		}
+
+		log.Printf("Found %d wallets to migrate.", len(walletsToMigrate))
+		for _, wallet := range walletsToMigrate {
+			log.Printf("Migrating wallet ID: %d", wallet.ID)
+			currentWallet := wallet // Make a mutable copy
+			if err := currentWallet.SetCosmosAddressFromMnemonic(); err != nil {
+				log.Printf("ERROR: Could not generate address for wallet ID %d: %v", currentWallet.ID, err)
+				continue // Skip to the next wallet
+			}
+
+			if err := db.Save(&currentWallet).Error; err != nil {
+				log.Printf("ERROR: Could not save migrated address for wallet ID %d: %v", currentWallet.ID, err)
+			} else {
+				log.Printf("Successfully migrated address for wallet ID %d: %s", currentWallet.ID, currentWallet.CosmosAddress)
+			}
+		}
+		log.Println("Address migration finished.")
+		return
 	}
 
 	// If in dev mode, generate the address for the first wallet that needs one and exit.
@@ -81,56 +110,57 @@ func main() {
 
 	log.Println("Checker application starting...")
 
-	// Fetch all wallet balances from the database that have a Cosmos address.
+	// Fetch wallets that have a Cosmos address but haven't had their balance checked yet.
 	var wallets []entity.WalletBalance
-	if err := db.Where("cosmos_address IS NOT NULL AND cosmos_address != ?", "").Find(&wallets).Error; err != nil {
-		log.Fatalf("Error fetching wallets from database: %v", err)
+	if err := db.Where("cosmos_address IS NOT NULL AND cosmos_address != '' AND (cosmos_balance IS NULL OR cosmos_balance = '')").Find(&wallets).Error; err != nil {
+		log.Fatalf("Error fetching wallets to check balance: %v", err)
 	}
 
-	log.Printf("Found %d wallets to process.\n", len(wallets))
+	log.Printf("Found %d wallets to process.", len(wallets))
 
 	for _, wallet := range wallets {
 		log.Printf("Processing wallet ID: %d", wallet.ID)
 		currentWallet := wallet // Make a mutable copy
 
-		// 2. Check wallet balance if not already notified.
-		if !currentWallet.IsNotified {
-			log.Printf("Checking balance for address: %s", currentWallet.CosmosAddress)
-			hasBalance, err := CheckBalance(currentWallet.CosmosAddress)
-			if err != nil {
-				log.Printf("ERROR: Could not check balance for address %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
-				continue // Skip to next wallet.
-			}
+		log.Printf("Checking balance for address: %s", currentWallet.CosmosAddress)
+		balance, err := CheckBalance(currentWallet.CosmosAddress)
+		if err != nil {
+			log.Printf("ERROR: Could not check balance for address %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
+			// The CheckBalance function returns "0" on error, so we'll save that.
+		}
 
-			now := time.Now()
-			currentWallet.BalanceUpdatedAt = &now
+		currentWallet.CosmosBalance = balance
+		now := time.Now()
+		currentWallet.BalanceUpdatedAt = &now
 
-			// 3. If balance > 0, send a Telegram message.
-			if hasBalance {
-				log.Printf("SUCCESS: Wallet %s (ID: %d) has a positive balance!", currentWallet.CosmosAddress, currentWallet.ID)
-
-				if err := sendTelegramNotification(telegramToken, telegramChatID, currentWallet.CosmosAddress); err != nil {
-					log.Printf("ERROR: Failed to send Telegram notification for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
-				} else {
-					// 4. Mark as notified to prevent spam.
-					currentWallet.IsNotified = true
-				}
-			} else {
-				log.Printf("Wallet %s (ID: %d) has zero balance.", currentWallet.CosmosAddress, currentWallet.ID)
-			}
-
-			// Save the updated wallet state (BalanceUpdatedAt and possibly IsNotified)
-			if err := db.Save(&currentWallet).Error; err != nil {
+		// Convert balance string to big.Int for comparison.
+		balanceAmount, ok := new(big.Int).SetString(balance, 10)
+		if !ok {
+			log.Printf("ERROR: Failed to parse balance amount string '%s' for wallet %d", balance, currentWallet.ID)
+			if err := db.Save(&currentWallet).Error; err != nil { // Save anyway to avoid re-processing
 				log.Printf("ERROR: Failed to update wallet state for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
+			}
+			continue
+		}
+
+		// If balance > 0 and not already notified, send a Telegram message.
+		if balanceAmount.Cmp(big.NewInt(0)) > 0 && !currentWallet.IsNotified {
+			log.Printf("SUCCESS: Wallet %s (ID: %d) has a positive balance: %s", currentWallet.CosmosAddress, currentWallet.ID, currentWallet.CosmosBalance)
+
+			if err := sendTelegramNotification(telegramToken, telegramChatID, currentWallet.CosmosAddress); err != nil {
+				log.Printf("ERROR: Failed to send Telegram notification for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
 			} else {
-				if hasBalance && currentWallet.IsNotified {
-					log.Printf("Successfully marked wallet %s (ID: %d) as notified.", currentWallet.CosmosAddress, currentWallet.ID)
-				} else {
-					log.Printf("Successfully updated balance timestamp for wallet %s (ID: %d).", currentWallet.CosmosAddress, currentWallet.ID)
-				}
+				currentWallet.IsNotified = true
 			}
 		} else {
-			log.Printf("Wallet %s (ID: %d) was already notified. Skipping.", currentWallet.CosmosAddress, currentWallet.ID)
+			log.Printf("Wallet %s (ID: %d) has zero balance.", currentWallet.CosmosAddress, currentWallet.ID)
+		}
+
+		// Save the updated wallet state (CosmosBalance, BalanceUpdatedAt, and possibly IsNotified).
+		if err := db.Save(&currentWallet).Error; err != nil {
+			log.Printf("ERROR: Failed to update wallet state for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
+		} else {
+			log.Printf("Successfully updated balance for wallet %s (ID: %d). New balance: %s", currentWallet.CosmosAddress, currentWallet.ID, currentWallet.CosmosBalance)
 		}
 	}
 
