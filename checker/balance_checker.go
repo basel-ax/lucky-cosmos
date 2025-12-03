@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	// atomScanAPIBase is the base URL for the Atomscan API to fetch account details.
-	atomScanAPIBase = "https://api.atomscan.com/accounts/%s"
+	// cosmosAPI is the base URL for the Cosmos public REST API to fetch account details.
+	cosmosAPI = "https://rest.cosmos.directory/cosmoshub/cosmos/bank/v1beta1/balances/%s"
 	// atomDenom is the denomination for the native Cosmos Hub coin (micro-atom).
 	atomDenom = "uatom"
 )
@@ -22,13 +22,12 @@ type Balance struct {
 	Amount string `json:"amount"`
 }
 
-// AccountInfo represents the structure of the account data from the Atomscan API.
-// This is a simplified version focusing only on the balances we need.
-type AccountInfo struct {
+// BalanceResponse represents the structure of the account data from the Cosmos API.
+type BalanceResponse struct {
 	Balances []Balance `json:"balances"`
 }
 
-// CheckBalance checks a Cosmos address's balance using the public Atomscan API.
+// CheckBalance checks a Cosmos address's balance using a public Cosmos REST API.
 // It returns true if the balance of 'uatom' is greater than zero, and false otherwise.
 func CheckBalance(address string) (bool, error) {
 	if address == "" {
@@ -36,7 +35,7 @@ func CheckBalance(address string) (bool, error) {
 	}
 
 	// Construct the full API URL for the given address.
-	url := fmt.Sprintf(atomScanAPIBase, address)
+	url := fmt.Sprintf(cosmosAPI, address)
 
 	// Create a new HTTP client with a reasonable timeout to avoid hanging indefinitely.
 	client := &http.Client{
@@ -46,13 +45,13 @@ func CheckBalance(address string) (bool, error) {
 	// Perform the GET request to the Atomscan API.
 	resp, err := client.Get(url)
 	if err != nil {
-		return false, fmt.Errorf("failed to make HTTP request to atomscan: %w", err)
+		return false, fmt.Errorf("failed to make HTTP request to Cosmos API: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// The API should return a 200 OK status code on success.
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("received non-200 status code from atomscan: %d", resp.StatusCode)
+		return false, fmt.Errorf("received non-200 status code from Cosmos API: %d", resp.StatusCode)
 	}
 
 	// Read the response body.
@@ -61,14 +60,14 @@ func CheckBalance(address string) (bool, error) {
 		return false, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Unmarshal the JSON response into our AccountInfo struct.
-	var accInfo AccountInfo
-	if err := json.Unmarshal(body, &accInfo); err != nil {
-		return false, fmt.Errorf("failed to unmarshal json response from atomscan: %w", err)
+	// Unmarshal the JSON response into our BalanceResponse struct.
+	var balanceResp BalanceResponse
+	if err := json.Unmarshal(body, &balanceResp); err != nil {
+		return false, fmt.Errorf("failed to unmarshal json response from Cosmos API: %w", err)
 	}
 
 	// Iterate through the balances to find the 'uatom' denomination.
-	for _, balance := range accInfo.Balances {
+	for _, balance := range balanceResp.Balances {
 		if balance.Denom == atomDenom {
 			// Convert the amount string to a big.Int for safe comparison of large numbers.
 			balanceAmount, ok := new(big.Int).SetString(balance.Amount, 10)

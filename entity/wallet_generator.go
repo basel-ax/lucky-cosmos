@@ -61,11 +61,11 @@ func (wb *WalletBalance) SetCosmosAddressFromMnemonic() error {
 
 	var result keyOutput
 	if err := json.Unmarshal(outJSON.Bytes(), &result); err != nil {
-		return fmt.Errorf("failed to parse command output: %w", err)
+		return fmt.Errorf("failed to parse command output '%s': %w", outJSON.String(), err)
 	}
 
 	if result.Address == "" {
-		return fmt.Errorf("address not found in command output")
+		return fmt.Errorf("address not found in command output: %s", outJSON.String())
 	}
 
 	wb.CosmosAddress = result.Address
