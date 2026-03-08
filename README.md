@@ -99,3 +99,39 @@ This library is configured using environment variables. You can create a `.env` 
 | `DB_NAME` | The name of the PostgreSQL database. |
 | `TELEGRAM_APP_BOT_TOKEN` | The token for your Telegram bot, used by the checker command. |
 | `TELEGRAM_CHAT_ID` | The chat ID to send notifications to. |
+
+## Cron Job Setup
+
+To run the checker command automatically on a schedule, you can set up a cron job. The checker supports a `--prod` flag for production mode.
+
+### Production Mode (`--prod`)
+
+When running with the `--prod` flag:
+- Console output is suppressed (logs are written to `/tmp/lucky-cosmos-checker.log`)
+- A summary message is sent to Telegram when the command completes, showing how many rows were processed/updated
+- A lock file (`/tmp/lucky-cosmos-checker.lock`) prevents multiple instances from running simultaneously
+
+### Example Crontab Entry
+
+To run the checker every 5 minutes in production mode, add the following to your crontab:
+
+```bash
+*/5 * * * * cd /path/to/lucky-cosmos/checker && /usr/local/go/bin/go run . --prod >> /dev/null 2>&1
+```
+
+Or if you have a built binary:
+
+```bash
+*/5 * * * * /path/to/lucky-cosmos-checker >> /dev/null 2>&1
+```
+
+To edit your crontab, run:
+
+```bash
+crontab -e
+```
+
+### Monitoring
+
+- Check the log file for production mode: `tail -f /tmp/lucky-cosmos-checker.log`
+- The lock file prevents concurrent runs - if you see "Another instance is already running" in the logs, a previous cron job may still be processing

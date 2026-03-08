@@ -14,11 +14,56 @@ import (
 	"gorm.io/gorm"
 )
 
+// Global variable for production mode
+var prodMode bool
+var logFile *os.File
+
 func main() {
 	// Define command-line flags
 	devMode := flag.Bool("dev", false, "Enable development mode to generate a Cosmos address for the first wallet that needs one.")
 	migrateAddresses := flag.Bool("migrate-addresses", false, "Generate Cosmos addresses for all wallets with a mnemonic but no Cosmos address.")
+	prodModePtr := flag.Bool("prod", false, "Enable production mode: suppress console output and send summary to Telegram when done.")
 	flag.Parse()
+
+	// Set prodMode from flag
+	prodMode = *prodModePtr
+
+	// Lock file path for preventing multiple cron jobs
+	lockFilePath := "/tmp/lucky-cosmos-checker.lock"
+
+	// Check if lock file exists (another instance is running)
+	if _, err := os.Stat(lockFilePath); err == nil {
+		log.Println("Another instance is already running. Exiting.")
+		os.Exit(0)
+	}
+
+	// Create lock file
+	lockFile, err := os.Create(lockFilePath)
+	if err != nil {
+		log.Fatalf("Failed to create lock file: %v", err)
+	}
+	defer func() {
+		// Remove lock file on exit
+		os.Remove(lockFilePath)
+		if lockFile != nil {
+			lockFile.Close()
+		}
+	}()
+
+	// Setup production mode: suppress console output and log to file
+	if prodMode {
+		// Open log file for production mode
+		logFile, err := os.OpenFile("/tmp/lucky-cosmos-checker.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("Failed to open log file: %v", err)
+		}
+		defer logFile.Close()
+		log.SetOutput(logFile)
+		log.SetFlags(0) // Remove timestamps and standard flags
+
+		// Suppress standard log output by setting a custom output
+		log.SetOutput(logFile)
+	}
 
 	// Load .env file for local development from the parent directory.
 	// In production, environment variables should be set directly.
@@ -118,6 +163,9 @@ func main() {
 
 	log.Printf("Found %d wallets to process.", len(wallets))
 
+	// Counter for rows created/updated
+	rowsUpdated := 0
+
 	for _, wallet := range wallets {
 		log.Printf("Processing wallet ID: %d", wallet.ID)
 		currentWallet := wallet // Make a mutable copy
@@ -161,8 +209,17 @@ func main() {
 			log.Printf("ERROR: Failed to update wallet state for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
 		} else {
 			log.Printf("Successfully updated balance for wallet %s (ID: %d). New balance: %s", currentWallet.CosmosAddress, currentWallet.ID, currentWallet.CosmosBalance)
+			rowsUpdated++
 		}
 	}
 
 	log.Println("Checker application finished.")
+
+	// Send summary to Telegram in production mode
+	if prodMode {
+		summaryMessage := fmt.Sprintf("✅ Checker command completed!\n\nRows processed/updated: %d", rowsUpdated)
+		if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
+			log.Printf("ERROR: Failed to send summary Telegram notification: %v", err)
+		}
+	}
 }

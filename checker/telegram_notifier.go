@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // sendTelegramNotification sends a message to a specified Telegram chat.
-// It notifies the user about a wallet with a positive balance.
-func sendTelegramNotification(botToken, chatIDStr, walletAddress string) error {
+// It notifies the user about a wallet with a positive balance or a custom message.
+func sendTelegramNotification(botToken, chatIDStr, messageText string) error {
 	// Convert the chat ID string from environment variables to an int64,
 	// which is required by the Telegram Bot API library.
 	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
@@ -26,13 +27,18 @@ func sendTelegramNotification(botToken, chatIDStr, walletAddress string) error {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	// Construct the message text.
-	// The message includes a direct link to the account on the Atomscan explorer.
-	messageText := fmt.Sprintf(
-		"🎉 Lucky wallet found! 🎉\n\nAddress: %s\n\nBalance is greater than 0.\n\nView on Atomscan:\nhttps://www.atomscan.com/accounts/%s",
-		walletAddress,
-		walletAddress,
-	)
+	// Check if the message is a custom summary message (starts with ✅)
+	if strings.HasPrefix(messageText, "✅") {
+		// Custom summary message - don't add the Atomscan link
+		// messageText already contains the full message
+	} else {
+		// Wallet address message - append Atomscan link
+		messageText = fmt.Sprintf(
+			"🎉 Lucky wallet found! 🎉\n\nAddress: %s\n\nBalance is greater than 0.\n\nView on Atomscan:\nhttps://www.atomscan.com/accounts/%s",
+			messageText,
+			messageText,
+		)
+	}
 
 	// Create a new message configuration.
 	msg := tgbotapi.NewMessage(chatID, messageText)
@@ -42,6 +48,6 @@ func sendTelegramNotification(botToken, chatIDStr, walletAddress string) error {
 		return fmt.Errorf("failed to send telegram message: %w", err)
 	}
 
-	log.Printf("Successfully sent notification for address: %s", walletAddress)
+	log.Printf("Successfully sent notification: %s", messageText)
 	return nil
 }
