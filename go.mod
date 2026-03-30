@@ -1,6 +1,6 @@
 module github.com/basel-ax/lucky-cosmos
 
-go 1.25.3
+go 1.24.4
 
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
