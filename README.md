@@ -99,6 +99,7 @@ This library is configured using environment variables. You can create a `.env` 
 | `DB_NAME` | The name of the PostgreSQL database. |
 | `TELEGRAM_APP_BOT_TOKEN` | The token for your Telegram bot, used by the checker command. |
 | `TELEGRAM_CHAT_ID` | The chat ID to send notifications to. |
+| `TELEGRAM_MESSAGE_THREAD_ID` | Optional: The message thread ID for sending notifications to a specific topic in a Telegram supergroup forum. |
 
 ## Cron Job Setup
 
