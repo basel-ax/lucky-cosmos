@@ -61,8 +61,15 @@ This project includes a standalone command-line tool in the `checker` directory 
 2.  Fetches all `WalletBalance` records.
 3.  For each record, if the `CosmosAddress` is missing, it generates one from the mnemonic and saves it to the database.
 4.  It then checks the wallet's balance using the public Atomscan API.
-5.  If the balance is greater than zero and a notification has not been sent yet, it sends a message to a specified Telegram chat with a link to the wallet on Atomscan.
-6.  Finally, it marks the wallet as notified in the database to prevent duplicate messages.
+5. If the balance is greater than zero and a notification has not been sent yet, it sends a message to a specified Telegram chat with a link to the wallet on Atomscan.
+6. Finally, it marks the wallet as notified in the database to prevent duplicate messages.
+
+#### Telegram Topics
+
+If your Telegram bot is in a supergroup with topics enabled, you can send notifications to a specific topic instead of the general chat. To find the message thread ID:
+- Open the topic in Telegram
+- Right-click on the topic name → "Copy link"
+- The link will contain the thread ID (e.g., `https://t.me/c/1234567890/1` where `1` is the thread ID)
 
 ### Running the Checker
 
