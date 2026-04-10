@@ -1,3 +1,0 @@
-
-2026/04/10 15:00:02 [32m/mnt/usb/projects/lucky-cosmos/checker/main.go:107 [33mSLOW SQL >= 200ms
-[0m[31;1m[337.337ms] [33m[rows:18002][35m SELECT * FROM "wallet_balances" WHERE (mnemonic IS NOT NULL AND mnemonic != '' AND (cosmos_address IS NULL OR cosmos_address = '')) AND "wallet_balances"."deleted_at" IS NULL[0m
