@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -45,18 +44,18 @@ func sendTelegramNotification(botToken, chatIDStr, messageText string) error {
 		)
 	}
 
-	// Create a new message configuration.
-	msg := tgbotapi.NewMessage(chatID, messageText)
-
-	if messageThreadID != 0 {
-		v := reflect.ValueOf(&msg)
-		if v.Elem().FieldByName("MessageThreadID").IsValid() {
-			v.Elem().FieldByName("MessageThreadID").SetInt(messageThreadID)
-		}
+	// Create params directly to include message_thread_id
+	params := tgbotapi.Params{
+		"chat_id": strconv.FormatInt(chatID, 10),
+		"text":    messageText,
 	}
 
-	// Send the message.
-	if _, err := bot.Send(msg); err != nil {
+	if messageThreadID != 0 {
+		params["message_thread_id"] = strconv.FormatInt(messageThreadID, 10)
+		log.Printf("Sending to topic ID: %d", messageThreadID)
+	}
+
+	if _, err := bot.MakeRequest("sendMessage", params); err != nil {
 		return fmt.Errorf("failed to send telegram message: %w", err)
 	}
 
