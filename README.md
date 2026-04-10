@@ -94,6 +94,22 @@ go run . -migrate-addresses
 
 This command will find all wallets that need an address, generate it, and save it to the database.
 
+In production mode, it also sends a Telegram notification with the number of addresses migrated.
+
+#### Cron Job for Address Migration
+
+To run address migration periodically (e.g., every hour), add this to your crontab:
+
+```bash
+0 * * * * cd /path/to/lucky-cosmos/checker && /usr/local/go/bin/go run . -migrate-addresses --prod >> /dev/null 2>&1
+```
+
+Or if you have a built binary:
+
+```bash
+0 * * * * /path/to/lucky-cosmos-checker -migrate-addresses --prod >> /dev/null 2>&1
+```
+
 ## Configuration
 
 This library is configured using environment variables. You can create a `.env` file in your project root or set the variables in your deployment environment.

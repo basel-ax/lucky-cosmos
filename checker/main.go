@@ -99,6 +99,10 @@ func main() {
 	// Handle the -migrate-addresses flag
 	if *migrateAddresses {
 		log.Println("Starting address migration...")
+
+		// Telegram messaging in prod mode
+		walletsMigrated := 0
+
 		var walletsToMigrate []entity.WalletBalance
 		if err := db.Where("mnemonic IS NOT NULL AND mnemonic != '' AND (cosmos_address IS NULL OR cosmos_address = '')").Find(&walletsToMigrate).Error; err != nil {
 			log.Fatalf("Failed to fetch wallets for migration: %v", err)
@@ -117,9 +121,18 @@ func main() {
 				log.Printf("ERROR: Could not save migrated address for wallet ID %d: %v", currentWallet.ID, err)
 			} else {
 				log.Printf("Successfully migrated address for wallet ID %d: %s", currentWallet.ID, currentWallet.CosmosAddress)
+				walletsMigrated++
 			}
 		}
 		log.Println("Address migration finished.")
+
+		// Send Telegram notification in prod mode
+		if prodMode && telegramToken != "" && telegramChatID != "" {
+			summaryMessage := fmt.Sprintf("✅ lucky-cosmos: %d addresses migrated", walletsMigrated)
+			if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
+				log.Printf("ERROR: Failed to send migration Telegram notification: %v", err)
+			}
+		}
 		return
 	}
 
