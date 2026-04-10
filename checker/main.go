@@ -228,7 +228,7 @@ func main() {
 		sendWalletCnt := os.Getenv("SEND_WALLET_CNT")
 		if sendWalletCnt == "" || strings.EqualFold(sendWalletCnt, "true") {
 			// Send wallets processed count
-			summaryMessage := fmt.Sprintf("lucky-cosmos: %d wallets processed", walletsProcessed)
+			summaryMessage := fmt.Sprintf("✅ lucky-cosmos: %d wallets processed", walletsProcessed)
 			if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
 				log.Printf("ERROR: Failed to send wallets processed Telegram notification: %v", err)
 			}
