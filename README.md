@@ -51,7 +51,30 @@ func main() {
 
 **Note:** This usage example assumes you have the `gaiad` command-line tool (or a compatible Cosmos SDK binary) installed and available in your system's `PATH`.
 
-[Installing Gaia](https://docs.cosmos.network/hub/v25/getting-started/installation)  
+[Installing Gaia](https://docs.cosmos.network/hub/v25/getting-started/installation)
+
+### Installing gaiad for Cron Jobs
+
+For the migrate-addresses command to work in cron jobs, `gaiad` must be available in the system PATH. To install gaiad system-wide:
+
+```bash
+# Option 1: Using Go
+go install github.com/cosmos/gaia/v7@latest
+
+# Option 2: Download binary from releases
+# Download from https://github.com/cosmos/gaia/releases
+sudo cp gaiad /usr/local/bin/
+```
+
+After installation, verify it's available:
+```bash
+which gaiad
+```
+
+If you can't install system-wide, add it to PATH in your cron job:
+```bash
+0 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/path/to/gaiad go run . -migrate-addresses --prod >> migrate-addresses.log 2>&1
+```  
 
 ## Checker Command
 
