@@ -39,7 +39,7 @@ func sendTelegramNotification(botToken, chatIDStr, messageText string) error {
 	} else {
 		// Wallet address message - append Atomscan link
 		messageText = fmt.Sprintf(
-			"🎉 Lucky wallet found! 🎉\n\nAddress: %s\n\nBalance is greater than 0.\n\nView on Atomscan:\nhttps://www.atomscan.com/accounts/%s",
+			"🎉 lucky-cosmos: Wallet found! 🎉\nAddress: %s\nBalance > 0\nView: https://www.atomscan.com/accounts/%s",
 			messageText,
 			messageText,
 		)

@@ -217,7 +217,7 @@ func main() {
 
 	// Send summary to Telegram in production mode
 	if prodMode {
-		summaryMessage := fmt.Sprintf("✅ Checker command completed!\n\nRows processed/updated: %d", rowsUpdated)
+		summaryMessage := fmt.Sprintf("✅ lucky-cosmos: Checker completed! Rows processed/updated: %d", rowsUpdated)
 		if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
 			log.Printf("ERROR: Failed to send summary Telegram notification: %v", err)
 		}
