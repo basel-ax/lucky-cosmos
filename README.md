@@ -70,6 +70,7 @@ If your Telegram bot is in a supergroup with topics enabled, you can send notifi
 - Open the topic in Telegram
 - Right-click on the topic name → "Copy link"
 - The link will contain the thread ID (e.g., `https://t.me/c/1234567890/1` where `1` is the thread ID)
+- Set this ID in your `.env` file: `TELEGRAM_TOPIC_ID=1`
 
 ### Running the Checker
 
@@ -106,7 +107,7 @@ This library is configured using environment variables. You can create a `.env` 
 | `DB_NAME` | The name of the PostgreSQL database. |
 | `TELEGRAM_APP_BOT_TOKEN` | The token for your Telegram bot, used by the checker command. |
 | `TELEGRAM_CHAT_ID` | The chat ID to send notifications to. |
-| `TELEGRAM_MESSAGE_THREAD_ID` | Optional: The message thread ID for sending notifications to a specific topic in a Telegram supergroup forum. |
+| `TELEGRAM_TOPIC_ID` | Optional: The message thread ID for sending notifications to a specific topic in a Telegram supergroup forum. |
 
 ## Cron Job Setup
 

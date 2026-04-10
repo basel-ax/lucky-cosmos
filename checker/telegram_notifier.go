@@ -65,14 +65,14 @@ func sendTelegramNotification(botToken, chatIDStr, messageText string) error {
 }
 
 func getMessageThreadID() int64 {
-	threadIDStr := os.Getenv("TELEGRAM_MESSAGE_THREAD_ID")
+	threadIDStr := os.Getenv("TELEGRAM_TOPIC_ID")
 	if threadIDStr == "" {
 		return 0
 	}
 
 	threadID, err := strconv.ParseInt(threadIDStr, 10, 64)
 	if err != nil {
-		log.Printf("Warning: Invalid TELEGRAM_MESSAGE_THREAD_ID '%s': %v", threadIDStr, err)
+		log.Printf("Warning: Invalid TELEGRAM_TOPIC_ID '%s': %v", threadIDStr, err)
 		return 0
 	}
 	return threadID
