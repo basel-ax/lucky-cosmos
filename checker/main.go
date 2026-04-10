@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/basel-ax/lucky-cosmos/entity"
@@ -155,6 +156,10 @@ func main() {
 
 	log.Println("Checker application starting...")
 
+	// Counter for wallets processed
+	walletsProcessed := 0
+	positiveWalletsNotified := 0
+
 	// Fetch wallets that have a Cosmos address but haven't had their balance checked yet.
 	var wallets []entity.WalletBalance
 	if err := db.Where("cosmos_address IS NOT NULL AND cosmos_address != '' AND (cosmos_balance IS NULL OR cosmos_balance = '')").Find(&wallets).Error; err != nil {
@@ -181,6 +186,8 @@ func main() {
 		now := time.Now()
 		currentWallet.BalanceUpdatedAt = &now
 
+		walletsProcessed++
+
 		// Convert balance string to big.Int for comparison.
 		balanceAmount, ok := new(big.Int).SetString(balance, 10)
 		if !ok {
@@ -199,6 +206,7 @@ func main() {
 				log.Printf("ERROR: Failed to send Telegram notification for wallet %s (ID: %d): %v", currentWallet.CosmosAddress, currentWallet.ID, err)
 			} else {
 				currentWallet.IsNotified = true
+				positiveWalletsNotified++
 			}
 		} else {
 			log.Printf("Wallet %s (ID: %d) has zero balance.", currentWallet.CosmosAddress, currentWallet.ID)
@@ -217,9 +225,21 @@ func main() {
 
 	// Send summary to Telegram in production mode
 	if prodMode {
-		summaryMessage := fmt.Sprintf("✅ lucky-cosmos: Checker completed! Rows processed/updated: %d", rowsUpdated)
-		if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
-			log.Printf("ERROR: Failed to send summary Telegram notification: %v", err)
+		sendWalletCnt := os.Getenv("SEND_WALLET_CNT")
+		if sendWalletCnt == "" || strings.EqualFold(sendWalletCnt, "true") {
+			// Send wallets processed count
+			summaryMessage := fmt.Sprintf("lucky-cosmos: %d wallets processed", walletsProcessed)
+			if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
+				log.Printf("ERROR: Failed to send wallets processed Telegram notification: %v", err)
+			}
+		} else {
+			// Send only if there were any wallets with positive balance notified
+			if positiveWalletsNotified > 0 {
+				summaryMessage := fmt.Sprintf("✅ lucky-cosmos: %d wallets processed", positiveWalletsNotified)
+				if err := sendTelegramNotification(telegramToken, telegramChatID, summaryMessage); err != nil {
+					log.Printf("ERROR: Failed to send wallets processed Telegram notification: %v", err)
+				}
+			}
 		}
 	}
 }
