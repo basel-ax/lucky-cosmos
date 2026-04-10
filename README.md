@@ -55,14 +55,14 @@ func main() {
 
 ### Installing gaiad for Cron Jobs
 
-For the migrate-addresses command to work in cron jobs, `gaiad` must be available in the system PATH. To install gaiad system-wide:
+For the migrate-addresses command to work in cron jobs, `gaiad` must be available in the system PATH.
+
+**Installation**: Download the latest release from https://github.com/cosmos/gaia/releases and extract the binary to your system:
 
 ```bash
-# Option 1: Using Go
-go install github.com/cosmos/gaia/v7@latest
-
-# Option 2: Download binary from releases
-# Download from https://github.com/cosmos/gaia/releases
+# Download and extract
+wget https://github.com/cosmos/gaia/releases/download/v7.0.0/gaia-v7.0.0-linux-amd64.tar.gz
+tar -xzf gaia-v7.0.0-linux-amd64.tar.gz
 sudo cp gaiad /usr/local/bin/
 ```
 
