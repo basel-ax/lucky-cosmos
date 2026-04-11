@@ -25,7 +25,7 @@ func main() {
 	devMode := flag.Bool("dev", false, "Enable development mode to generate a Cosmos address for the first wallet that needs one.")
 	migrateAddresses := flag.Bool("migrate-addresses", false, "Generate Cosmos addresses for all wallets with a mnemonic but no Cosmos address.")
 	prodModePtr := flag.Bool("prod", false, "Enable production mode: suppress console output and send summary to Telegram when done.")
-	migrateLimit := flag.Int("limit", 0, "Limit the number of addresses to generate during migration (0 for no limit)")
+	migrateLimitPtr := flag.Int("limit", 1000, "Limit the number of addresses to generate during migration (default: 1000, 0 for no limit)")
 	flag.Parse()
 
 	// Set prodMode from flag
@@ -105,8 +105,8 @@ func main() {
 
 		// Determine limit: command line flag > environment variable > default (1000)
 		var limit int
-		if *migrateLimit > 0 {
-			limit = *migrateLimit
+		if *migrateLimitPtr > 0 {
+			limit = *migrateLimitPtr
 		} else {
 			limitEnv := os.Getenv("MIGRATE_LIMIT")
 			if limitEnv != "" {
