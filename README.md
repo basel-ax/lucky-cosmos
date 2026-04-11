@@ -60,9 +60,9 @@ For the migrate-addresses command to work in cron jobs, `gaiad` must be availabl
 **Installation**: Download the latest release from https://github.com/cosmos/gaia/releases and extract the binary to your system:
 
 ```bash
-# Download and extract
-wget https://github.com/cosmos/gaia/releases/download/v7.0.0/gaia-v7.0.0-linux-amd64.tar.gz
-tar -xzf gaia-v7.0.0-linux-amd64.tar.gz
+# Download and extract (recommended v27.2.0)
+wget https://github.com/cosmos/gaia/releases/download/v27.2.0/gaia-v27.2.0-linux-amd64.tar.gz
+tar -xzf gaia-v27.2.0-linux-amd64.tar.gz
 sudo cp gaiad /usr/local/bin/
 ```
 
