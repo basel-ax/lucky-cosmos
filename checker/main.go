@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ func main() {
 	devMode := flag.Bool("dev", false, "Enable development mode to generate a Cosmos address for the first wallet that needs one.")
 	migrateAddresses := flag.Bool("migrate-addresses", false, "Generate Cosmos addresses for all wallets with a mnemonic but no Cosmos address.")
 	prodModePtr := flag.Bool("prod", false, "Enable production mode: suppress console output and send summary to Telegram when done.")
+	migrateLimit := flag.Int("limit", 0, "Limit the number of addresses to generate during migration (0 for no limit)")
 	flag.Parse()
 
 	// Set prodMode from flag
@@ -59,10 +61,8 @@ func main() {
 			log.Fatalf("Failed to open log file: %v", err)
 		}
 		defer logFile.Close()
-		log.SetOutput(logFile)
-		log.SetFlags(0) // Remove timestamps and standard flags
 
-		// Suppress standard log output by setting a custom output
+		log.SetFlags(log.LstdFlags)
 		log.SetOutput(logFile)
 	}
 
@@ -103,8 +103,37 @@ func main() {
 		// Telegram messaging in prod mode
 		walletsMigrated := 0
 
+		// Determine limit: command line flag > environment variable > default (1000)
+		var limit int
+		if *migrateLimit > 0 {
+			limit = *migrateLimit
+		} else {
+			limitEnv := os.Getenv("MIGRATE_LIMIT")
+			if limitEnv != "" {
+				if parsedLimit, err := strconv.Atoi(limitEnv); err == nil && parsedLimit >= 0 {
+					limit = parsedLimit
+				} else {
+					log.Printf("WARNING: Invalid MIGRATE_LIMIT value '%s', using default 1000", limitEnv)
+					limit = 1000
+				}
+			} else {
+				limit = 1000
+			}
+		}
+
+		// Build query for wallets needing migration
+		query := db.Where("mnemonic IS NOT NULL AND mnemonic != '' AND (cosmos_address IS NULL OR cosmos_address = '')")
+
+		// Apply limit if set (0 means no limit)
+		if limit > 0 {
+			query = query.Limit(limit)
+			log.Printf("Applying limit of %d addresses to migrate", limit)
+		} else {
+			log.Println("No limit applied to address migration")
+		}
+
 		var walletsToMigrate []entity.WalletBalance
-		if err := db.Where("mnemonic IS NOT NULL AND mnemonic != '' AND (cosmos_address IS NULL OR cosmos_address = '')").Find(&walletsToMigrate).Error; err != nil {
+		if err := query.Find(&walletsToMigrate).Error; err != nil {
 			log.Fatalf("Failed to fetch wallets for migration: %v", err)
 		}
 

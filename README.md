@@ -117,6 +117,20 @@ go run . -migrate-addresses
 
 This command will find all wallets that need an address, generate it, and save it to the database.
 
+You can limit the number of addresses to migrate using the `-limit` flag or the `MIGRATE_LIMIT` environment variable:
+
+```bash
+# Limit to 100 addresses using flag
+cd checker
+go run . -migrate-addresses --limit=100
+
+# Limit to 50 addresses using environment variable
+cd checker
+MIGRATE_LIMIT=50 go run . -migrate-addresses
+```
+
+If neither is specified, the default limit is 1000 addresses. To disable the limit, set `-limit=0` or `MIGRATE_LIMIT=0`.
+
 In production mode, it also sends a Telegram notification with the number of addresses migrated.
 
 #### Cron Job for Address Migration
@@ -124,13 +138,19 @@ In production mode, it also sends a Telegram notification with the number of add
 To run address migration periodically (e.g., every hour), add this to your crontab:
 
 ```bash
-0 * * * * cd /path/to/lucky-cosmos/checker && /usr/local/go/bin/go run . -migrate-addresses --prod >> /dev/null 2>&1
+0 * * * * cd /path/to/lucky-cosmos/checker && /usr/local/go/bin/go run . -migrate-addresses --prod --limit=100 >> /dev/null 2>&1
 ```
 
 Or if you have a built binary:
 
 ```bash
-0 * * * * /path/to/lucky-cosmos-checker -migrate-addresses --prod >> /dev/null 2>&1
+0 * * * * /path/to/lucky-cosmos-checker -migrate-addresses --prod --limit=100 >> /dev/null 2>&1
+```
+
+You can also use the `MIGRATE_LIMIT` environment variable instead of the `-limit` flag:
+
+```bash
+0 * * * * MIGRATE_LIMIT=100 /path/to/lucky-cosmos-checker -migrate-addresses --prod >> /dev/null 2>&1
 ```
 
 ## Configuration
@@ -147,6 +167,7 @@ This library is configured using environment variables. You can create a `.env` 
 | `TELEGRAM_APP_BOT_TOKEN` | The token for your Telegram bot, used by the checker command. |
 | `TELEGRAM_CHAT_ID` | The chat ID to send notifications to. |
 | `TELEGRAM_TOPIC_ID` | Optional: The message thread ID for sending notifications to a specific topic in a Telegram supergroup forum. |
+| `MIGRATE_LIMIT` | Optional: Limit the number of addresses to generate during migration (default: 1000, 0 for no limit). |
 
 ## Cron Job Setup
 
