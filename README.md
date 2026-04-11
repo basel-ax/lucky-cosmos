@@ -157,6 +157,28 @@ You can also use the `MIGRATE_LIMIT` environment variable instead of the `-limit
 0 * * * * MIGRATE_LIMIT=100 /path/to/lucky-cosmos-checker -migrate-addresses --prod >> /dev/null 2>&1
 ```
 
+#### Checking Pending Rows
+
+To check how many rows will be processed next time, run these SQL queries:
+
+```sql
+-- Check how many wallets need cosmos_address generation (migrate-addresses)
+SELECT COUNT(*) as need_cosmos_address 
+FROM wallet_balances 
+WHERE deleted_at IS NULL 
+  AND mnemonic IS NOT NULL 
+  AND mnemonic != '' 
+  AND (cosmos_address IS NULL OR cosmos_address = '');
+
+-- Check how many wallets need balance check (checker)
+SELECT COUNT(*) as need_balance_check
+FROM wallet_balances 
+WHERE deleted_at IS NULL 
+  AND cosmos_address IS NOT NULL 
+  AND cosmos_address != '' 
+  AND (cosmos_balance IS NULL OR cosmos_balance = '');
+```
+
 ## Configuration
 
 This library is configured using environment variables. You can create a `.env` file in your project root or set the variables in your deployment environment.
