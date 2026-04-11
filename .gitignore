@@ -27,6 +27,12 @@ go.work.sum
 # env file
 .env
 
+# Log files
+*.log
+
+# Binaries
+checker/lucky-cosmos-checker
+
 # Editor/IDE
 # .idea/
 # .vscode/

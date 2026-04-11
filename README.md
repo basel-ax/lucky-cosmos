@@ -72,9 +72,13 @@ which gaiad
 ```
 
 If you can't install system-wide, add it to PATH in your cron job:
+
 ```bash
-0 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/path/to/gaiad go run . -migrate-addresses --prod >> migrate-addresses.log 2>&1
-```  
+# Example cron job with PATH to gaiad
+0 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/home/swenro11/go/bin go run . -migrate-addresses --prod >> migrate-addresses.log 2>&1
+```
+
+**Note**: Cron jobs have minimal PATH. If `gaiad` is not in `/usr/local/bin`, you must add its location to PATH in the cron job (e.g., `PATH=$PATH:/home/swenro11/go/bin`).  
 
 ## Checker Command
 
