@@ -144,20 +144,20 @@ In production mode, it also sends a Telegram notification with the number of add
 To run address migration periodically (e.g., every hour), add this to your crontab:
 
 ```bash
-# Recommended: 2000 addresses (~40 minutes, ~1.2 sec/wallet)
-0 * * * * cd /path/to/lucky-cosmos/checker && PATH=$PATH:/home/swenro11/go/bin go run . -migrate-addresses --prod --limit=2000 >> /dev/null 2>&1
+# Recommended: 2250 addresses (~45 minutes, ~1.2 sec/wallet)
+5 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/home/swenro11/go/bin go run . -migrate-addresses --prod --limit=2250 >> migrate-addresses.log 2>&1
 ```
 
 Or if you have a built binary:
 
 ```bash
-0 * * * * PATH=$PATH:/home/swenro11/go/bin /path/to/lucky-cosmos-checker -migrate-addresses --prod --limit=2000 >> /dev/null 2>&1
+5 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/home/swenro11/go/bin go run . -migrate-addresses --prod --limit=2250 >> migrate-addresses.log 2>&1
 ```
 
 You can also use the `MIGRATE_LIMIT` environment variable instead of the `-limit` flag:
 
 ```bash
-0 * * * * MIGRATE_LIMIT=2000 /path/to/lucky-cosmos-checker -migrate-addresses --prod >> /dev/null 2>&1
+5 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && PATH=$PATH:/home/swenro11/go/bin MIGRATE_LIMIT=2250 go run . -migrate-addresses --prod >> migrate-addresses.log 2>&1
 ```
 
 #### Checking Pending Rows
@@ -213,17 +213,16 @@ When running with the `--prod` flag:
 
 ### Example Crontab Entry
 
-To run the checker every 5 minutes in production mode, add the following to your crontab:
+To run the checker every hour at minute 55:
 
 ```bash
-# Recommended: 5000 wallets per run (~40 minutes, ~0.5 sec/wallet)
-*/5 * * * * cd /path/to/lucky-cosmos/checker && /usr/local/go/bin/go run . --prod >> /dev/null 2>&1
+55 * * * * cd /mnt/usb/projects/lucky-cosmos/checker && go run . --prod >> checker.log 2>&1
 ```
 
 Or if you have a built binary:
 
 ```bash
-*/5 * * * * /path/to/lucky-cosmos-checker >> /dev/null 2>&1
+55 * * * * /mnt/usb/projects/lucky-cosmos/checker/lucky-cosmos-checker --prod >> checker.log 2>&1
 ```
 
 To edit your crontab, run:
