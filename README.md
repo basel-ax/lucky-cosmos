@@ -205,9 +205,11 @@ To run the checker command automatically on a schedule, you can set up a cron jo
 ### Production Mode (`--prod`)
 
 When running with the `--prod` flag:
-- Console output is suppressed (logs are written to `/tmp/lucky-cosmos-checker.log`)
+- Console output is suppressed (logs are written to `checker.log` in the checker directory)
 - A summary message is sent to Telegram when the command completes, showing how many rows were processed/updated
-- A lock file (`/tmp/lucky-cosmos-checker.lock`) prevents multiple instances from running simultaneously
+- A lock file (`./checker.lock`) prevents multiple instances from running simultaneously
+
+**If the checker gets stuck**: remove the lock file with `rm checker.lock` and try again.
 
 **Performance**: ~0.5 seconds per wallet (API call). No limit by default, processes all pending wallets.
 
@@ -233,5 +235,5 @@ crontab -e
 
 ### Monitoring
 
-- Check the log file for production mode: `tail -f /tmp/lucky-cosmos-checker.log`
-- The lock file prevents concurrent runs - if you see "Another instance is already running" in the logs, a previous cron job may still be processing
+- Check the log file: `tail -f checker.log`
+- The lock file (`./checker.lock`) prevents concurrent runs - if you see "Another instance is already running" in the logs, remove the lock file with `rm checker.lock`
