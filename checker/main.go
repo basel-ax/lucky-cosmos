@@ -31,8 +31,7 @@ func main() {
 	// Set prodMode from flag
 	prodMode = *prodModePtr
 
-	// Lock file path for preventing multiple cron jobs
-	lockFilePath := "/tmp/lucky-cosmos-checker.lock"
+	lockFilePath := "./checker.lock"
 
 	// Check if lock file exists (another instance is running)
 	if _, err := os.Stat(lockFilePath); err == nil {
