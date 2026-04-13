@@ -135,6 +135,8 @@ MIGRATE_LIMIT=50 go run . -migrate-addresses
 
 If neither is specified, the default limit is 1000 addresses. To disable the limit, set `-limit=0` or `MIGRATE_LIMIT=0`.
 
+**Performance**: ~1.2 seconds per wallet. Recommended limit: 2000 (~40 min/hour).
+
 In production mode, it also sends a Telegram notification with the number of addresses migrated.
 
 #### Cron Job for Address Migration
@@ -206,6 +208,8 @@ When running with the `--prod` flag:
 - Console output is suppressed (logs are written to `/tmp/lucky-cosmos-checker.log`)
 - A summary message is sent to Telegram when the command completes, showing how many rows were processed/updated
 - A lock file (`/tmp/lucky-cosmos-checker.lock`) prevents multiple instances from running simultaneously
+
+**Performance**: ~0.5 seconds per wallet (API call). No limit by default, processes all pending wallets.
 
 ### Example Crontab Entry
 
