@@ -32,11 +32,19 @@ func main() {
 	prodMode = *prodModePtr
 
 	lockFilePath := "./checker.lock"
+	lockMaxAge := 1 * time.Hour // Lock file auto-expires after 1 hour
 
-	// Check if lock file exists (another instance is running)
-	if _, err := os.Stat(lockFilePath); err == nil {
-		log.Println("Another instance is already running. Exiting.")
-		os.Exit(0)
+	// Check if lock file exists
+	if info, err := os.Stat(lockFilePath); err == nil {
+		if time.Since(info.ModTime()) > lockMaxAge {
+			if rmErr := os.Remove(lockFilePath); rmErr != nil {
+				log.Printf("Warning: Could not remove stale lock file: %v", rmErr)
+			}
+			log.Printf("Removed stale lock file (age: %v)", time.Since(info.ModTime()))
+		} else {
+			log.Println("Another instance is already running. Exiting.")
+			os.Exit(0)
+		}
 	}
 
 	// Create lock file
@@ -52,10 +60,8 @@ func main() {
 		}
 	}()
 
-	// Setup production mode: suppress console output and log to file
 	if prodMode {
-		// Open log file for production mode
-		logFile, err := os.OpenFile("/tmp/lucky-cosmos-checker.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logFile, err := os.OpenFile("./checker.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			log.Fatalf("Failed to open log file: %v", err)
 		}
